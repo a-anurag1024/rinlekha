@@ -1,0 +1,26 @@
+# Environment
+.env
+
+# Local dev log and notes (not for repo)
+DEVLOG.md
+notes/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs & artifacts
+outputs/
+
+# MLflow
+mlflow.db
+
+# Model weights
+*.safetensors
+*.bin
+models/
+weights/
