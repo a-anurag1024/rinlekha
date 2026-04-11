@@ -16,6 +16,12 @@ __pycache__/
 # Outputs & artifacts
 outputs/
 
+# Generated data — lives on HuggingFace Hub, not in git
+data/raw/
+data/processed/
+data/generation/
+data/qc_report*.json
+
 # MLflow
 mlflow.db
 

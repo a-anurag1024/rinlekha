@@ -12,7 +12,7 @@
 
 # ── Phase 1: Data Pipeline ────────────────────────────────────────────────────
 ray[default]>=2.10.0
-anthropic>=0.49.0
+openai>=1.17.0
 datasets>=2.18.0
 huggingface_hub>=0.22.0
 
@@ -29,7 +29,7 @@ protobuf>=4.25.0
 
 # ── Phase 3/4: Evaluation ─────────────────────────────────────────────────────
 deepeval>=1.4.0
-openai>=1.17.0                 # DeepEval LLM-as-judge + vLLM OpenAI-compat client
+openai>=1.17.0                 # Phase 1 synthesis + DeepEval LLM-as-judge + vLLM OpenAI-compat client
 
 # ── Phase 5: Serving ──────────────────────────────────────────────────────────
 # vllm — install separately: pip install vllm

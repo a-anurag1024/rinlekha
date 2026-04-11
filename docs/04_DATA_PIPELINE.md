@@ -272,16 +272,16 @@ Write the memo now. Do not add any text before ## APPLICANT SUMMARY.
 @ray.remote
 def synthesize_memo_batch(
     profiles: list[dict],
-    claude_api_key: str
+    openai_api_key: str
 ) -> list[dict]:
-    import anthropic
-    client = anthropic.Anthropic(api_key=claude_api_key)
+    from openai import OpenAI
+    client = OpenAI(api_key=openai_api_key)
     results = []
 
     for profile in profiles:
         try:
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
                 max_tokens=900,
                 messages=[{
                     "role": "user",
@@ -291,9 +291,9 @@ def synthesize_memo_batch(
             results.append({
                 "profile_id": profile["profile_id"],
                 "input_profile": profile,
-                "output_memo": response.content[0].text,
-                "input_tokens": response.usage.input_tokens,
-                "output_tokens": response.usage.output_tokens,
+                "output_memo": response.choices[0].message.content,
+                "input_tokens": response.usage.prompt_tokens,
+                "output_tokens": response.usage.completion_tokens,
                 "synthesis_status": "success"
             })
         except Exception as e:
@@ -306,13 +306,13 @@ def synthesize_memo_batch(
     return results
 ```
 
-**Cost estimate:**
+**Cost estimate (gpt-4o-mini):**
 - Avg input tokens per call: ~600
 - Avg output tokens per call: ~650
 - 800 calls total
-- Claude Sonnet pricing: ~$3/M input + $15/M output
-- Total estimate: (800 × 600 / 1M × $3) + (800 × 650 / 1M × $15)
-- ≈ $1.44 + $7.80 = **~$9.24 total (~₹770)**
+- gpt-4o-mini pricing: ~$0.15/M input + $0.60/M output
+- Total estimate: (800 × 600 / 1M × $0.15) + (800 × 650 / 1M × $0.60)
+- ≈ $0.07 + $0.31 = **~$0.38 total (~₹32)**
 
 ---
 
