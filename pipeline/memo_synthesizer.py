@@ -3,14 +3,14 @@
 pipeline/memo_synthesizer.py — Phase 1, Step 2
 
 Synthesises credit memos for each borrower profile using the OpenAI API
-(gpt-4o-mini) and Ray for parallel dispatch.
+(gpt-4.1-mini) and Ray for parallel dispatch.
 
 Each memo follows a strict 6-section institutional format:
   APPLICANT SUMMARY / DEBT SERVICEABILITY / CREDIT BEHAVIOR /
   RISK FLAGS / RECOMMENDATION / ANALYST NOTES
 
-Cost estimate (gpt-4o-mini @ $0.15/M input + $0.60/M output):
-  800 memos × ~600 input tokens + ~700 output tokens ≈ $0.40
+Cost estimate (gpt-4.1-mini @ $0.40/M input + $1.60/M output):
+  800 memos × ~600 input tokens + ~700 output tokens ≈ $1 total
 
 Usage:
     # Generate all memos (reads profiles from default path)
@@ -258,7 +258,7 @@ _FATAL = (AuthenticationError, BadRequestError)
 def synthesize_single_memo(
     profile: dict,
     client: OpenAI,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1-mini",
     max_tokens: int = 1100,
     max_retries: int = 3,
     base_delay: float = 1.0,
@@ -357,7 +357,7 @@ def synthesize_single_memo(
 def synthesize_memo_batch(
     profiles: list[dict],
     api_key: str,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1-mini",
 ) -> list[dict]:
     """
     Ray remote worker: synthesises memos for a batch of profiles sequentially.
@@ -378,7 +378,7 @@ def synthesize_all_memos(
     profiles: list[dict],
     api_key: str,
     n_workers: int = 8,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1-mini",
     completed_ids: set[str] | None = None,
 ) -> list[dict]:
     """
@@ -462,7 +462,7 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true",
                         help="Skip profiles already present in --output")
     parser.add_argument("--workers", type=int, default=8)
-    parser.add_argument("--model", type=str, default="gpt-4o-mini")
+    parser.add_argument("--model", type=str, default="gpt-4.1-mini")
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENAI_API_KEY")

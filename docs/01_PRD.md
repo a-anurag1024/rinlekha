@@ -119,7 +119,7 @@ These limitations are documented explicitly in the model card.
 
 | Layer | Tools |
 |---|---|
-| Data Pipeline | Python, Ray, OpenAI API (gpt-4o-mini), HuggingFace Datasets |
+| Data Pipeline | Python, Ray, OpenAI API (gpt-4.1-mini), HuggingFace Datasets |
 | Training | Unsloth, TRL, MLflow, HuggingFace Hub |
 | Evaluation | DeepEval, MLflow, Kubernetes (kind), custom adversarial suite |
 | Serving | vLLM, LangChain, Langfuse |

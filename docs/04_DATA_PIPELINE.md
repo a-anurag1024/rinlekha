@@ -281,7 +281,7 @@ def synthesize_memo_batch(
     for profile in profiles:
         try:
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 max_tokens=900,
                 messages=[{
                     "role": "user",
@@ -306,11 +306,11 @@ def synthesize_memo_batch(
     return results
 ```
 
-**Cost estimate (gpt-4o-mini):**
+**Cost estimate (gpt-4.1-mini):**
 - Avg input tokens per call: ~600
 - Avg output tokens per call: ~650
 - 800 calls total
-- gpt-4o-mini pricing: ~$0.15/M input + $0.60/M output
+- gpt-4.1-mini pricing: ~$0.15/M input + $0.60/M output
 - Total estimate: (800 × 600 / 1M × $0.15) + (800 × 650 / 1M × $0.60)
 - ≈ $0.07 + $0.31 = **~$0.38 total (~₹32)**
 
