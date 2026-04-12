@@ -18,8 +18,18 @@ import pytest
 
 def _install_ray_stub():
     stub = types.ModuleType("ray")
-    stub.remote = lambda f: f
+
+    def _remote(f):
+        """Wrap f so that f.remote(*a, **kw) calls f(*a, **kw) synchronously."""
+        def wrapper(*args, **kwargs):
+            return f(*args, **kwargs)
+        wrapper.remote = f
+        wrapper.__name__ = getattr(f, "__name__", repr(f))
+        return wrapper
+
+    stub.remote = _remote
     stub.init = lambda *a, **kw: None
+    # ray.get receives a list of "futures" — in stub mode these are plain results
     stub.get = lambda futures: futures
     sys.modules["ray"] = stub
 
