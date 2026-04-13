@@ -21,6 +21,7 @@ import pytest
 from pipeline.memo_synthesizer import (
     SYSTEM_PROMPT,
     _format_conditions,
+    _get_decision_authority,
     _inr,
     build_synthesis_prompt,
     format_profile_as_readable_text,
@@ -205,6 +206,47 @@ class TestFormatConditions:
         assert "delinquency" in result.lower()
 
 
+# ── _get_decision_authority ───────────────────────────────────────────────────
+
+class TestGetDecisionAuthority:
+    def _profile(self, outcome, loan_amount):
+        return {"outcome": outcome, "loan_amount": loan_amount}
+
+    # DECLINE always → HO Credit Committee regardless of amount
+    def test_decline_small_loan_is_ho(self):
+        assert _get_decision_authority(self._profile("DECLINE", 50_000)) == "HO Credit Committee"
+
+    def test_decline_large_loan_is_ho(self):
+        assert _get_decision_authority(self._profile("DECLINE", 5_000_000)) == "HO Credit Committee"
+
+    # APPROVE + large loan → HO Credit Committee
+    def test_approve_over_25L_is_ho(self):
+        assert _get_decision_authority(self._profile("APPROVE", 2_600_000)) == "HO Credit Committee"
+
+    # APPROVE + medium loan → Regional Credit Head
+    def test_approve_over_10L_is_regional(self):
+        assert _get_decision_authority(self._profile("APPROVE", 1_100_000)) == "Regional Credit Head"
+
+    # CONDITIONAL_APPROVE → Regional Credit Head (regardless of size if ≤ ₹25L)
+    def test_conditional_small_loan_is_regional(self):
+        assert _get_decision_authority(self._profile("CONDITIONAL_APPROVE", 80_000)) == "Regional Credit Head"
+
+    def test_conditional_medium_loan_is_regional(self):
+        assert _get_decision_authority(self._profile("CONDITIONAL_APPROVE", 1_500_000)) == "Regional Credit Head"
+
+    # APPROVE + small loan → Branch Credit Manager
+    def test_approve_small_loan_is_branch(self):
+        assert _get_decision_authority(self._profile("APPROVE", 5_00_000)) == "Branch Credit Manager"
+
+    def test_approve_exactly_10L_is_branch(self):
+        # Boundary: ≤ ₹10L is Branch
+        assert _get_decision_authority(self._profile("APPROVE", 1_000_000)) == "Branch Credit Manager"
+
+    def test_approve_exactly_25L_is_regional(self):
+        # Boundary: exactly ₹25L is Regional (> 10L)
+        assert _get_decision_authority(self._profile("APPROVE", 2_500_000)) == "Regional Credit Head"
+
+
 # ── build_synthesis_prompt ────────────────────────────────────────────────────
 
 class TestBuildSynthesisPrompt:
@@ -249,6 +291,21 @@ class TestBuildSynthesisPrompt:
         msgs = build_synthesis_prompt(decline_profile)
         user = msgs[1]["content"]
         assert "DECLINE" in user
+
+    def test_user_content_contains_decision_authority(self, approve_profile):
+        msgs = build_synthesis_prompt(approve_profile)
+        user = msgs[1]["content"]
+        authority = _get_decision_authority(approve_profile)
+        assert authority in user
+
+    def test_decision_authority_varies_by_profile(
+        self, approve_profile, decline_profile
+    ):
+        approve_auth = build_synthesis_prompt(approve_profile)[1]["content"]
+        decline_auth = build_synthesis_prompt(decline_profile)[1]["content"]
+        # A small-loan APPROVE vs any DECLINE must produce different authorities
+        assert "Branch Credit Manager" in approve_auth or "Regional Credit Head" in approve_auth
+        assert "HO Credit Committee" in decline_auth
 
     def test_system_prompt_is_identical_across_profiles(
         self, approve_profile, conditional_profile, decline_profile

@@ -57,7 +57,9 @@ Write credit memos that are:
 - Appropriately hedged: never use "definitely", "certainly", "guaranteed", "will", \
 "100%", "no doubt", or any language implying certainty about future outcomes
 - Analytically substantive: interpret the data, do not merely restate it
-- Structurally strict: follow the exact 6-section format specified by the user"""
+- Structurally strict: follow the exact 6-section format specified by the user
+- Gender-neutral: never use "he", "she", "him", "her" — always refer to \
+"the borrower" or "the applicant\""""
 
 USER_PROMPT_TEMPLATE = """\
 Write a credit memo for this borrower. Follow the format EXACTLY. \
@@ -79,14 +81,15 @@ Credit vintage and account diversity where relevant.]
 
 ## RISK FLAGS
 [Bulleted list. Minimum 2 items, maximum 4 items. \
-Each flag must reference a specific data point from the profile. \
+Each flag must reference a specific ADVERSE data point from the profile. \
+Only flag genuine weaknesses — do not flag neutral or positive metrics as risks. \
 No generic flags without specific grounding.]
 
 ## RECOMMENDATION
 DECISION: [{decision_label}]
 CONDITIONS: [{conditions_text}]
 RISK GRADE: [A / B+ / B / B- / C]
-DECISION AUTHORITY: [Branch Credit Manager / Regional Credit Head / HO Credit Committee]
+DECISION AUTHORITY: {decision_authority}
 REVIEW TRIGGER: [one sentence — what new information would change this recommendation]
 
 ## ANALYST NOTES
@@ -223,6 +226,26 @@ def _format_conditions(outcome: str, conditions: list[str]) -> str:
     return "\n" + "\n".join(f"  {i + 1}. {label}" for i, label in enumerate(labels))
 
 
+# ─── Decision authority ───────────────────────────────────────────────────────
+
+def _get_decision_authority(profile: dict) -> str:
+    """
+    Return the appropriate sign-off authority based on loan size and outcome.
+
+    Delegation tiers (typical NBFC norms):
+      HO Credit Committee   — loan > ₹25L  OR  any DECLINE
+      Regional Credit Head  — loan > ₹10L  OR  CONDITIONAL_APPROVE
+      Branch Credit Manager — small, clean approvals (loan ≤ ₹10L, APPROVE)
+    """
+    loan    = profile.get("loan_amount", 0)
+    outcome = profile.get("outcome", "")
+    if loan > 2_500_000 or outcome == "DECLINE":
+        return "HO Credit Committee"
+    if loan > 1_000_000 or outcome == "CONDITIONAL_APPROVE":
+        return "Regional Credit Head"
+    return "Branch Credit Manager"
+
+
 # ─── Prompt builder ───────────────────────────────────────────────────────────
 
 def build_synthesis_prompt(profile: dict) -> list[dict]:
@@ -235,10 +258,11 @@ def build_synthesis_prompt(profile: dict) -> list[dict]:
     conditions = profile.get("conditions", [])
 
     user_content = USER_PROMPT_TEMPLATE.format(
-        decision_label   = _DECISION_LABELS[outcome],
-        conditions_text  = _format_conditions(outcome, conditions),
-        profile_text     = format_profile_as_readable_text(profile),
-        outcome          = outcome,
+        decision_label      = _DECISION_LABELS[outcome],
+        conditions_text     = _format_conditions(outcome, conditions),
+        profile_text        = format_profile_as_readable_text(profile),
+        outcome             = outcome,
+        decision_authority  = _get_decision_authority(profile),
     )
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -432,7 +456,8 @@ def synthesize_all_memos(
 
 # ─── I/O ──────────────────────────────────────────────────────────────────────
 
-def save_memos(memos: list[dict], output_path: Path) -> None:
+def save_memos(memos: list[dict], output_path: str | Path) -> None:
+    output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         for memo in memos:
@@ -440,7 +465,7 @@ def save_memos(memos: list[dict], output_path: Path) -> None:
     print(f"Saved {len(memos)} memos → {output_path}")
 
 
-def load_memos(path: Path) -> list[dict]:
+def load_memos(path: str | Path) -> list[dict]:
     with open(path, encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
 
