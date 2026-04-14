@@ -473,6 +473,9 @@ def load_memos(path: str | Path) -> list[dict]:
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    from dotenv import load_dotenv
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Synthesise credit memos for RinLekha borrower profiles"
     )

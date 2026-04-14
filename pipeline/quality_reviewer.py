@@ -45,8 +45,8 @@ REQUIRED_SECTIONS: list[str] = [
 
 # Each tuple: (check_key_suffix, compiled_regex)
 REQUIRED_REC_PATTERNS: list[tuple[str, re.Pattern]] = [
-    ("decision",          re.compile(r"DECISION:\s*(APPROVE|CONDITIONAL APPROVE|DECLINE)")),
-    ("risk_grade",        re.compile(r"RISK GRADE:\s*[ABC][+-]?")),
+    ("decision",          re.compile(r"DECISION:\s*\[?(APPROVE|CONDITIONAL APPROVE|DECLINE)\]?")),
+    ("risk_grade",        re.compile(r"RISK GRADE:\s*\[?[ABC][+-]?\]?")),
     ("decision_authority",re.compile(r"DECISION AUTHORITY:")),
     ("review_trigger",    re.compile(r"REVIEW TRIGGER:")),
     ("conditions",        re.compile(r"CONDITIONS:")),

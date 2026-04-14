@@ -194,6 +194,18 @@ class TestQualityCheckRecFields:
               "output_memo": memo}
         assert quality_check(ex)["rec_risk_grade"] is True
 
+    def test_bracketed_risk_grade_accepted(self):
+        memo = _make_memo().replace("RISK GRADE: A", "RISK GRADE: [B-]")
+        ex = {"profile_id": "p", "input_profile": {"outcome": "APPROVE"},
+              "output_memo": memo}
+        assert quality_check(ex)["rec_risk_grade"] is True
+
+    def test_bracketed_decision_accepted(self):
+        memo = _make_memo().replace("DECISION: APPROVE", "DECISION: [APPROVE]")
+        ex = {"profile_id": "p", "input_profile": {"outcome": "APPROVE"},
+              "output_memo": memo}
+        assert quality_check(ex)["rec_decision"] is True
+
 
 class TestQualityCheckLanguage:
     def test_clean_memo_no_forbidden(self):
