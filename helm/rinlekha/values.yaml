@@ -1,0 +1,27 @@
+namespace: rinlekha
+
+vllm:
+  # vLLM runs standalone on WSL2 host — not deployed by this chart.
+  # ExternalName Service routes cluster traffic to the host.
+  externalHostname: host.docker.internal
+  port: 8000
+  modelName: rinlekha
+
+mlflow:
+  image: rinlekha/mlflow:latest
+  imagePullPolicy: Never
+  port: 5000
+  storage: 2Gi
+
+evalJob:
+  image: rinlekha/eval:latest
+  imagePullPolicy: Never
+  totalShards: 3
+  judgeModel: gpt-4o-mini
+  hfDataset: a-anurag1024/rinlekha-training-data
+  resultsStorage: 1Gi
+
+secrets:
+  # Set these via --set or a separate sealed-secrets file — never commit real values.
+  openaiApiKey: "REPLACE_ME"
+  hfToken: "REPLACE_ME"

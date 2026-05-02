@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+RUN pip install --no-cache-dir mlflow==2.22.0
+
+EXPOSE 5000
+
+# Create dirs at runtime (not build time) so they exist on the mounted PVC.
+# sqlite:////  = absolute path — 3 slashes for URI scheme + 1 for root.
+CMD mkdir -p /mlflow/db /mlflow/artifacts && \
+    mlflow server \
+    --host 0.0.0.0 \
+    --port 5000 \
+    --backend-store-uri sqlite:////mlflow/db/mlflow.db \
+    --default-artifact-root /mlflow/artifacts \
+    --serve-artifacts

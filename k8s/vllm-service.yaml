@@ -1,0 +1,18 @@
+# vLLM runs standalone on the WSL2 host (GPU passthrough to kind pods is
+# unreliable on Windows/WSL2). This ExternalName Service lets eval pods reach
+# it via the stable DNS name vllm-service.rinlekha.svc.cluster.local:8000.
+#
+# host.docker.internal resolves to the WSL2 host IP in Docker Desktop.
+# If it does not resolve, replace with the output of:
+#   ip route show default | awk '{print $3}'  (run inside WSL2)
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+  namespace: rinlekha
+spec:
+  type: ExternalName
+  externalName: host.docker.internal
+  ports:
+    - port: 8000
+      targetPort: 8000

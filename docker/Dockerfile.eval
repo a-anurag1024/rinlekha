@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY evaluation/requirements-eval.txt .
+RUN pip install --no-cache-dir -r requirements-eval.txt
+
+COPY evaluation/ /app/evaluation/
+
+ENTRYPOINT ["python", "/app/evaluation/run_eval_shard.py"]

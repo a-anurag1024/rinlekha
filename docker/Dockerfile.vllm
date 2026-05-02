@@ -1,0 +1,30 @@
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    vllm==0.8.5 \
+    huggingface_hub
+
+# Models are mounted at runtime via volume — not baked in to keep image portable.
+# Mount: -v ~/.cache/huggingface:/root/.cache/huggingface
+# Or set HF_HOME to a shared volume path.
+
+EXPOSE 8000
+
+# Base model + LoRA adapter are passed via CMD overrides or env vars.
+# Default: serves rinlekha LoRA on top of gemma-3-4b-it.
+ENV BASE_MODEL="google/gemma-3-4b-it"
+ENV LORA_ADAPTER="a-anurag1024/rinlekha-gemma3-4b-finetuned"
+ENV LORA_NAME="rinlekha"
+
+CMD python -m vllm.entrypoints.openai.api_server \
+    --model ${BASE_MODEL} \
+    --enable-lora \
+    --lora-modules ${LORA_NAME}=${LORA_ADAPTER} \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 2048 \
+    --gpu-memory-utilization 0.85 \
+    --max-num-seqs 4 \
+    --disable-log-requests

@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rinlekha-evaluation
+  namespace: {{ include "rinlekha.namespace" . }}
+spec:
+  completions: {{ .Values.evalJob.totalShards }}
+  parallelism: {{ .Values.evalJob.totalShards }}
+  completionMode: Indexed
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: rinlekha-worker
+      containers:
+        - name: eval-worker
+          image: {{ .Values.evalJob.image }}
+          imagePullPolicy: {{ .Values.evalJob.imagePullPolicy }}
+          env:
+            - name: JOB_COMPLETION_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+            - name: TOTAL_SHARDS
+              value: {{ .Values.evalJob.totalShards | quote }}
+            - name: VLLM_URL
+              value: {{ include "rinlekha.vllmUrl" . | quote }}
+            - name: MLFLOW_TRACKING_URI
+              value: {{ include "rinlekha.mlflowUrl" . | quote }}
+            - name: HF_DATASET
+              value: {{ .Values.evalJob.hfDataset | quote }}
+            - name: JUDGE_MODEL
+              value: {{ .Values.evalJob.judgeModel | quote }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rinlekha-secrets
+                  key: openai-api-key
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: rinlekha-secrets
+                  key: hf-token
+          volumeMounts:
+            - name: results-volume
+              mountPath: /results
+      volumes:
+        - name: results-volume
+          persistentVolumeClaim:
+            claimName: eval-results-pvc

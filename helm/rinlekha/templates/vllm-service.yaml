@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+  namespace: {{ include "rinlekha.namespace" . }}
+spec:
+  type: ExternalName
+  externalName: {{ .Values.vllm.externalHostname }}
+  ports:
+    - port: {{ .Values.vllm.port }}
+      targetPort: {{ .Values.vllm.port }}

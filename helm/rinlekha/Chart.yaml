@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rinlekha
+description: RinLekha evaluation stack — MLflow + eval workers on kind
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
