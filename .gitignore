@@ -20,10 +20,14 @@ outputs/
 data/raw/
 data/processed/
 data/generation/
+data/reports/
 data/qc_report*.json
 
 # MLflow
-mlflow.db
+mlflow/
+
+# Unsloth compiled cache
+unsloth_compiled_cache/
 
 # Model weights
 *.safetensors

@@ -1,0 +1,49 @@
+# Run 2 — higher rank (r=16, lr=2e-4, epochs=3)
+
+model:
+  base: "unsloth/gemma-3-4b-it"
+  max_seq_length: 2048
+  load_in_4bit: true
+  dtype: null
+
+lora:
+  r: 16
+  alpha: 16                           # alpha == r
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: "none"
+  use_gradient_checkpointing: "unsloth"
+
+training:
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  num_train_epochs: 3
+  learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  optimizer: "adamw_8bit"
+  eval_strategy: "steps"
+  eval_steps: 50
+  logging_steps: 10
+  save_strategy: "steps"
+  save_steps: 100
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  output_dir: "outputs/run2-r16-lr2e4-ep3"
+
+data:
+  dataset: "a-anurag1024/rinlekha-training-data"
+  text_field: "text"
+
+mlflow:
+  tracking_uri: "sqlite:///mlflow/mlflow.db"
+  experiment_name: "rinlekha-finetuning"
