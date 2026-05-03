@@ -38,8 +38,9 @@ RESULTS_DIR  = os.environ.get("RESULTS_DIR", "/results")
 MODEL_NAME   = os.environ.get("VLLM_MODEL_NAME", "rinlekha")
 
 ALPACA_INSTRUCTION = (
-    "You are RinLekha, an NBFC credit analyst. "
-    "Generate a structured credit memo for the borrower profile provided."
+    "You are a senior credit analyst at an Indian NBFC. "
+    "Write a structured credit memo for the borrower profile "
+    "below following institutional format exactly."
 )
 
 
@@ -60,7 +61,7 @@ def generate_via_vllm(input_text: str) -> str:
             "frequency_penalty": 0.1,
             "stop":              ["### Instruction:"],
         },
-        timeout=60,
+        timeout=300,
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["text"].strip()

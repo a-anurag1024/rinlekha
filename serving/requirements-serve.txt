@@ -1,0 +1,17 @@
+# Inference server dependencies (llama-cpp-python with CUDA).
+# Install with:
+#   CMAKE_ARGS="-DGGML_CUDA=on" pip install -r serving/requirements-serve.txt
+#
+# Or use a pre-built CUDA wheel (faster, no cmake needed):
+#   pip install llama-cpp-python \
+#       --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+
+llama-cpp-python[server]>=0.3.0
+# Server deps stripped by the pre-built CUDA wheel — install explicitly:
+sse-starlette
+starlette-context
+anyio
+fastapi
+uvicorn
+pydantic-settings
+pydantic
