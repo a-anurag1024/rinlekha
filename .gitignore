@@ -29,6 +29,12 @@ mlflow/
 # Unsloth compiled cache
 unsloth_compiled_cache/
 
+# DeepEval cache
+.deepeval/
+
+# Local llama.cpp clone
+scripts/.llama_cpp/
+
 # Model weights
 *.safetensors
 *.bin
