@@ -84,22 +84,51 @@ Results by decision type:
 Evaluation harness: 6 custom [DeepEval](https://github.com/confident-ai/deepeval) metrics
 (3 rule-based, 1 count-based, 2 LLM-judge via GPT-4o-mini). Results logged to MLflow.
 
+## Baseline Comparison — RinLekha vs GPT-4o-mini (30 cases)
+
+GPT-4o-mini is the cost-comparable API baseline — similar inference cost tier to a self-hosted 4B GGUF.
+Both models receive the same format instructions in the system prompt; any gap on structural metrics
+reflects format internalization from fine-tuning rather than prompt engineering.
+
+| Metric | RinLekha | GPT-4o-mini |
+|--------|----------|-------------|
+| StructuralCompliance | **1.000** | 0.994 |
+| RecommendationFormat | **1.000** | 1.000 |
+| ForbiddenLanguage | **1.000** | 1.000 |
+| RiskFlagsCount | **0.967** | 0.133 |
+| GEval | 0.861 | **0.863** |
+| Faithfulness | **0.964** | 0.940 |
+
+The most striking gap is **RiskFlagsCount (0.967 vs 0.133)**: GPT-4o-mini consistently produces
+fewer than 2 or more than 4 bulleted risk flags even with explicit instructions. This is the kind
+of tight structural constraint that fine-tuning internalizes reliably while prompting does not.
+GEval (analytical quality) is essentially tied, confirming the 4B model matches a much larger
+prompted model on reasoning quality for this domain-specific task.
+
 ## Adversarial Evaluation — 8 Edge Cases
 
-Hand-crafted cases targeting boundary conditions not well-represented in the test set:
-extreme FOIR, missing CIBIL history, contradictory signals, grossly disproportionate loan amounts,
-active delinquency, settled accounts, and unverifiable self-employed income.
+Hand-crafted cases targeting boundary conditions not well-represented in the test set.
+Decision accuracy: **62% (5/8)** — all DECLINE cases correct, misses on CONDITIONAL APPROVE.
 
-| Case | Expected | Description |
-|------|----------|-------------|
-| adv_01 | DECLINE | FOIR 113% post-loan |
-| adv_02 | CONDITIONAL APPROVE | CIBIL 0, no credit history |
-| adv_03 | DECLINE | CIBIL 820 but FOIR 87% post-loan |
-| adv_04 | DECLINE | LTI 72×, FOIR 228% |
-| adv_05 | CONDITIONAL APPROVE | CIBIL 798, only 0.4yr employment |
-| adv_06 | DECLINE | 5 missed payments in 24 months |
-| adv_07 | DECLINE | 2 settled accounts (prior write-offs) |
-| adv_08 | CONDITIONAL APPROVE | High income, 0.6yr self-employed tenure |
+| Case | Expected | Actual | Result |
+|------|----------|--------|--------|
+| adv_01 — FOIR 113% post-loan | DECLINE | DECLINE | ✓ |
+| adv_02 — CIBIL 0, no credit history | CONDITIONAL APPROVE | DECLINE | ✗ |
+| adv_03 — CIBIL 820 but FOIR 87% | DECLINE | DECLINE | ✓ |
+| adv_04 — LTI 72×, FOIR 228% | DECLINE | DECLINE | ✓ |
+| adv_05 — CIBIL 798, only 0.4yr tenure | CONDITIONAL APPROVE | APPROVE | ✗ |
+| adv_06 — 5 missed payments in 24m | DECLINE | DECLINE | ✓ |
+| adv_07 — 2 settled accounts | DECLINE | DECLINE | ✓ |
+| adv_08 — High income, 0.6yr self-employed | CONDITIONAL APPROVE | APPROVE | ✗ |
+
+Adversarial aggregate metrics (format compliance holds even on edge cases):
+StructuralCompliance 1.000 · RecommendationFormat 1.000 · ForbiddenLanguage 1.000 ·
+RiskFlagsCount 1.000 · GEval 0.853 · Faithfulness 0.959
+
+**Failure pattern**: the model correctly identifies hard DECLINE signals (FOIR ceiling, settled accounts,
+delinquency) but conflates CONDITIONAL APPROVE with APPROVE on soft-boundary cases — particularly
+short employment tenure and unverifiable self-employed income. The training set under-represents
+these borderline conditions relative to clean approvals.
 
 ## Usage
 
