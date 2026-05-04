@@ -10,6 +10,9 @@ Every call to generate_credit_memo_observed() is traced with:
 Requires LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in environment.
 Compatible with Langfuse v4.x (get_client / score_current_span API).
 """
+from dotenv import load_dotenv
+load_dotenv()  # must run before get_client() reads env vars
+
 from langfuse import get_client, observe
 
 from serving.pipeline import generate_credit_memo
