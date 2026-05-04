@@ -22,3 +22,6 @@ langchain-openai>=0.2.0
 
 # Langfuse observability
 langfuse>=4.0.0
+
+# Gradio demo app
+gradio>=5.0.0

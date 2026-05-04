@@ -13,8 +13,8 @@ Credit analysts at NBFCs spend significant time writing structured memos that fo
 ## Pipeline
 
 ```
-Borrower Profiles → Memo Synthesis → Dataset Builder → QLoRA Fine-Tuning → GGUF Export → Eval
-      (Phase 1)         (Phase 1)        (Phase 1)         (Phase 2)        (Phase 3)   (Phase 4)
+Borrower Profiles → Memo Synthesis → Dataset Builder → QLoRA Fine-Tuning → GGUF Export → Eval → Serving Pipeline → Gradio Demo
+      (Phase 1)         (Phase 1)        (Phase 1)         (Phase 2)        (Phase 3)   (Phase 4)    (Phase 5)        (Phase 6)
 ```
 
 ### Phase 1 — Synthetic Dataset (`pipeline/`)
@@ -36,6 +36,9 @@ Borrower Profiles → Memo Synthesis → Dataset Builder → QLoRA Fine-Tuning �
 
 - Best adapter (`run3-r16-lr1e4-ep5`) pushed to HuggingFace Hub
 
+![MLflow training run overview](assets/mlflow_1.png)
+![MLflow training curves — loss and eval_loss](assets/mlflow_2.png)
+
 ### Phase 3 — Serving (`serving/`)
 - LoRA adapter merged into base model via PEFT `merge_and_unload()` on Colab T4
 - Converted to **GGUF Q8_0** (4.1 GB) via llama.cpp; fits in 6.4 GB VRAM alongside KV cache
@@ -45,6 +48,23 @@ Borrower Profiles → Memo Synthesis → Dataset Builder → QLoRA Fine-Tuning �
 ### Phase 4 — Evaluation (`evaluation/`)
 - 6 custom DeepEval metrics: 3 rule-based (structural format), 1 count-based (risk flags), 2 LLM-judge (GEval + Faithfulness via GPT-4o-mini)
 - Crash-resumable local runner with index-based checkpoint; results logged to MLflow
+- **Adversarial suite**: 8 hand-crafted edge cases targeting extreme FOIR, no credit history, delinquency, settled accounts — 5/8 decision accuracy; all DECLINE cases correct
+- **Baseline comparison**: RinLekha vs GPT-4o-mini on 30 cases — headline gap is RiskFlagsCount (0.967 vs 0.133), analytical quality tied (GEval 0.861 vs 0.863)
+
+### Phase 5 — Serving Pipeline (`serving/`)
+- **LangChain pipeline**: `PromptTemplate | OpenAI (completions) | CreditMemoParser` — uses Alpaca format to match training, not chat endpoint
+- **Pydantic output schema**: `CreditMemo` with typed `CreditDecision`, `RiskGrade`; deterministic parser never raises, reports `parse_success` + `parse_errors`
+- **Langfuse observability**: `@observe` decorator traces every call with 3 scores (`parse_success`, `structural_compliance`, `decision_extracted`) and metadata (`cibil_band`, `foir_band`, `employment_type`, `loan_purpose`)
+
+![Langfuse trace with scores and metadata](assets/langfuse_1.gif)
+
+### Phase 6 — Gradio Demo (`app/`)
+- Borrower profile input form (left panel) with full set of credit parameters
+- Generated memo displayed as formatted markdown (right panel)
+- Risk Dashboard JSON + Format Compliance JSON shown alongside
+- Separate opt-in button for GPT-4o-mini comparison — no external data sent unless explicitly triggered
+
+![Gradio demo app](assets/app_1.gif)
 
 ---
 
@@ -134,6 +154,10 @@ bash serving/start_server.sh outputs/rinlekha-q8.gguf
 # 2. Run evaluation
 export OPENAI_API_KEY=...   # for GEval / Faithfulness judge
 python evaluation/run_eval_local.py --no-mlflow
+
+# 3. Run Gradio demo
+python app/gradio_app.py
+# → http://localhost:7860
 ```
 
 See `scripts/colab_export_gguf.py` to re-export the GGUF from the adapter if needed.
@@ -150,4 +174,7 @@ See `scripts/colab_export_gguf.py` to re-export the GGUF from the adapter if nee
 | Evaluation | DeepEval + GPT-4o-mini judge |
 | Experiment tracking | MLflow |
 | Production eval | Kubernetes indexed job (kind cluster) |
+| Serving pipeline | LangChain + Pydantic |
+| Observability | Langfuse |
+| Demo | Gradio |
 | Adapter + dataset | HuggingFace Hub |
