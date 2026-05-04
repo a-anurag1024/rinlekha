@@ -8,12 +8,14 @@ Every call to generate_credit_memo_observed() is traced with:
   - Metadata: cibil_band, foir_band, employment_type, loan_purpose
 
 Requires LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in environment.
+Compatible with Langfuse v4.x (get_client / score_current_span API).
 """
-import os, re
-from langfuse.decorators import langfuse_context, observe
+from langfuse import get_client, observe
 
 from serving.pipeline import generate_credit_memo
 from serving.schemas import CreditDecision, CreditMemo
+
+langfuse = get_client()
 
 _SECTION_HEADERS = [
     "## APPLICANT SUMMARY", "## DEBT SERVICEABILITY",
@@ -59,36 +61,36 @@ def generate_credit_memo_observed(profile: dict) -> CreditMemo:
     proposed_emi = profile.get("proposed_emi_monthly", 0)
     foir_post = (existing_emi + proposed_emi) / income * 100 if income else 0
 
-    langfuse_context.update_current_observation(
+    langfuse.update_current_span(
         input=profile,
         metadata={
-            "cibil_score":       cibil,
-            "cibil_band":        _cibil_band(cibil),
-            "foir_post_loan":    round(foir_post, 1),
-            "foir_band":         _foir_band(foir_post),
-            "employment_type":   profile.get("employment_type"),
-            "loan_purpose":      profile.get("loan_purpose"),
-            "model":             "rinlekha-gemma3-4b-finetuned",
+            "cibil_score":     cibil,
+            "cibil_band":      _cibil_band(cibil),
+            "foir_post_loan":  round(foir_post, 1),
+            "foir_band":       _foir_band(foir_post),
+            "employment_type": profile.get("employment_type"),
+            "loan_purpose":    profile.get("loan_purpose"),
+            "model":           "rinlekha-gemma3-4b-finetuned",
         },
     )
 
     memo: CreditMemo = generate_credit_memo(profile)
 
-    langfuse_context.score_current_observation(
+    langfuse.score_current_span(
         name="parse_success",
         value=1.0 if memo.parse_success else 0.0,
         comment="; ".join(memo.parse_errors) if memo.parse_errors else None,
     )
-    langfuse_context.score_current_observation(
+    langfuse.score_current_span(
         name="structural_compliance",
         value=_structural_score(memo.raw_output),
     )
-    langfuse_context.score_current_observation(
+    langfuse.score_current_span(
         name="decision_extracted",
         value=0.0 if memo.decision == CreditDecision.UNKNOWN else 1.0,
     )
 
-    langfuse_context.update_current_observation(
+    langfuse.update_current_span(
         output=memo.model_dump(exclude={"raw_output"}),
     )
 

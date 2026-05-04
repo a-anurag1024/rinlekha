@@ -9,7 +9,7 @@ Requires:
 """
 import math
 from langchain_openai import OpenAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 from serving import parser
 from serving.schemas import CreditMemo
